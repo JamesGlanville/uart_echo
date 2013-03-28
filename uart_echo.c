@@ -81,6 +81,7 @@ UART3IntHandler(void) //This is triggered when the UART3 gets data - PC6/7
 {
     unsigned long ulStatus;
 
+    //git is ok.
     //
     // Get the interrrupt status.
     //

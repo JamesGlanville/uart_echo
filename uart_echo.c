@@ -16,6 +16,12 @@
 #include "utils/ustdlib.h"
 #include "lcd44780_LP.h"
 
+#define RED		GPIO_PIN_1
+#define BLUE	2
+#define GREEN	3
+
+#define BLINK(x)	GPIOPinWrite(GPIO_PORTF_BASE, (x),0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, (x),0)
+
 #define V5POWER	GPIO_PIN_1	//E
 #define V3POWER	GPIO_PIN_2	//E
 #define SERVO	GPIO_PIN_4	//F
@@ -25,6 +31,14 @@
 
 #define SERVOPERIOD 200		//Sends a pulse to the servo every 20ms (given 0.1ms systick period).
 //#define FIRSTRUN			//Define for initial write to EEPROM
+//#define	EASYOPEN			//Opens when butten held for long enough.
+
+void blinkred(){GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1,0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1,0);}
+void blinkblue(){GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2,0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2,0);}
+void blinkgreen(){GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3,0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3,0);}
+
+
+
 
 unsigned long initialNumTries = 50;
 unsigned long eepromAddress = 0xBEEF; //random non-zero address in case page 0 is special ( i think it is)
@@ -149,7 +163,7 @@ void openlock() //right now just wobbles the servo around at about 1Hz
 
 void HibernateInterrupt()
 {
-	//HibernateIntClear(HIBERNATE_INT_PIN_WAKE);
+	HibernateIntClear(HibernateIntStatus(1)); //Always need to clear the interrupts.
 	//openlock();
 }
 
@@ -175,6 +189,14 @@ int getDistance()
 	LCDWriteText("Locating...         ", 0, 0);
 	LCDWriteText("                    ", 1, 0);
 
+#ifdef EASYOPEN //Not Complete.
+	int open=1;
+	for(int i=0;i<1000;i++)
+	{
+		if (GPIOPinRead(GPIO_PORTF_BASE,GPIO_PIN_0)!=0)
+	}
+#endif
+
 	//if got fix, return distance.
 	//else, return 99999 to signal couldn't fix so no penalty
 
@@ -191,6 +213,8 @@ void ServoDriver()
 	if (servotimer>servomson){GPIOPinWrite(GPIO_PORTF_BASE,SERVO,0);}
 	else {GPIOPinWrite(GPIO_PORTF_BASE,SERVO,0xFF);}
 }
+
+
 
 int
 main(void)
@@ -219,8 +243,14 @@ main(void)
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, V5POWER);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, V3POWER);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, SERVO);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
 
-	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0xFF); //Turn on the 5V power to LCD + servo.
+#ifdef EASYOPEN
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
+#endif
+
 
 	SysTickPeriodSet(SysCtlClockGet()/10000);
 	SysTickIntRegister(&ServoDriver);
@@ -229,6 +259,9 @@ main(void)
     ROM_IntMasterEnable();
 
 //	while(1){	SysCtlDelay(ROM_SysCtlClockGet()/3);servomson=12;SysCtlDelay(ROM_SysCtlClockGet()/3);servomson=18;}
+    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
+    ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0xFF); //Turn on the 5V power to LCD + servo.
+    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
 
     EEPROMInit();
 	initLCD();
@@ -295,12 +328,15 @@ main(void)
      else
      {*/
 
+   // blinkred();
+    BLINK(RED);
 	HibernateEnableExpClk(SysCtlClockGet());
 	HibernateGPIORetentionEnable();											//Enables GPIO retention after wake from hibernate.
 	HibernateClockSelect(HIBERNATE_CLOCK_SEL_RAW);
 	HibernateWakeSet(HIBERNATE_WAKE_PIN);
 	HibernateIntRegister(&HibernateInterrupt);
 	HibernateIntEnable(HIBERNATE_INT_PIN_WAKE);
+	blinkblue();
     // }
 
  //   ROM_IntMasterEnable();
@@ -339,8 +375,8 @@ main(void)
     // Prompt for text to be entered.
     //
     //UARTSend((unsigned char *)"\033[2JEnter text: ", 16);
-
-//	SysCtlDelay(ROM_SysCtlClockGet());
+    blinkgreen();
+	SysCtlDelay(ROM_SysCtlClockGet());
 	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0); //GPIO pins keep state on hibernate, so make sure to power everything else down.
 
     HibernateRequest();

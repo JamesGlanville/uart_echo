@@ -19,21 +19,15 @@ uart_echo.obj: C:/StellarisWare/driverlib/uart.h
 uart_echo.obj: C:/StellarisWare/utils/ustdlib.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h
 uart_echo.obj: ../lcd44780_LP.h
-uart_echo.obj: ../nmea/nmea.h
-uart_echo.obj: ../nmea/./config.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/assert.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/cmath
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/yvals.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/linkage.h
-uart_echo.obj: ../nmea/./units.h
-uart_echo.obj: ../nmea/./gmath.h
-uart_echo.obj: ../nmea/./info.h
-uart_echo.obj: ../nmea/./time.h
-uart_echo.obj: ../nmea/./sentence.h
-uart_echo.obj: ../nmea/./generate.h
-uart_echo.obj: ../nmea/./generator.h
-uart_echo.obj: ../nmea/./parse.h
-uart_echo.obj: ../nmea/./parser.h
-uart_echo.obj: ../nmea/./context.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/string.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/_lock.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/mathcpp.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h
 
 ../uart_echo.c: 
 C:/StellarisWare/inc/hw_ints.h: 
@@ -54,18 +48,12 @@ C:/StellarisWare/driverlib/uart.h:
 C:/StellarisWare/utils/ustdlib.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h: 
 ../lcd44780_LP.h: 
-../nmea/nmea.h: 
-../nmea/./config.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/assert.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/cmath: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/yvals.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/linkage.h: 
-../nmea/./units.h: 
-../nmea/./gmath.h: 
-../nmea/./info.h: 
-../nmea/./time.h: 
-../nmea/./sentence.h: 
-../nmea/./generate.h: 
-../nmea/./generator.h: 
-../nmea/./parse.h: 
-../nmea/./parser.h: 
-../nmea/./context.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/string.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/_lock.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/mathcpp.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h: 

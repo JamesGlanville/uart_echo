@@ -10,18 +10,8 @@ ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./ustdlib.obj" \
 "./uart_echo.obj" \
-"./tok.obj" \
-"./time.obj" \
 "./startup_ccs.obj" \
-"./sentence.obj" \
-"./parser.obj" \
-"./parse.obj" \
 "./lcd44780_LP.obj" \
-"./info.obj" \
-"./gmath.obj" \
-"./generator.obj" \
-"./generate.obj" \
-"./context.obj" \
 -l"libc.a" \
 -l"C:/StellarisWare/boards/ek-lm4f120xl/uart_echo/ccs/../../../../driverlib/ccs-cm4f/Debug/driverlib-cm4f.lib" \
 "../uart_echo_ccs.cmd" \
@@ -129,7 +119,7 @@ all: uart_echo.out
 uart_echo.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -g --gcc --define=ccs="ccs" --define=PART_LM4F120H5QR --define=TARGET_IS_BLIZZARD_RA1 --diag_warning=225 --display_error_number --gen_func_subsections=on --ual -z --stack_size=256 -m"uart_echo_ccs.map" --heap_size=0 -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/lib" -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include" --reread_libs --warn_sections --display_error_number --rom_model -o "uart_echo.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -g --gcc --define=ccs="ccs" --define=PART_LM4F120H5QR --define=TARGET_IS_BLIZZARD_RA1 --diag_warning=225 --display_error_number --gen_func_subsections=on --ual -z --stack_size=1024 -m"uart_echo_ccs.map" --heap_size=0 -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/lib" -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include" --reread_libs --warn_sections --display_error_number --rom_model -o "uart_echo.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
@@ -137,8 +127,8 @@ uart_echo.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "uart_echo.out"
-	-$(RM) "context.pp" "generate.pp" "generator.pp" "gmath.pp" "info.pp" "lcd44780_LP.pp" "parse.pp" "parser.pp" "sentence.pp" "startup_ccs.pp" "time.pp" "tok.pp" "uart_echo.pp" "ustdlib.pp" 
-	-$(RM) "context.obj" "generate.obj" "generator.obj" "gmath.obj" "info.obj" "lcd44780_LP.obj" "parse.obj" "parser.obj" "sentence.obj" "startup_ccs.obj" "time.obj" "tok.obj" "uart_echo.obj" "ustdlib.obj" 
+	-$(RM) "lcd44780_LP.pp" "startup_ccs.pp" "uart_echo.pp" "ustdlib.pp" 
+	-$(RM) "lcd44780_LP.obj" "startup_ccs.obj" "uart_echo.obj" "ustdlib.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

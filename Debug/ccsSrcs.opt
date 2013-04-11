@@ -1,1 +1,1 @@
-"../context.c" "../generate.c" "../generator.c" "../gmath.c" "../info.c" "../lcd44780_LP.c" "../parse.c" "../parser.c" "../sentence.c" "../startup_ccs.c" "../time.c" "../tok.c" "../uart_echo.c" "C:/StellarisWare/utils/ustdlib.c" 
+"../lcd44780_LP.c" "../startup_ccs.c" "../uart_echo.c" "C:/StellarisWare/utils/ustdlib.c" 

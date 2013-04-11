@@ -15,19 +15,23 @@
 #include "driverlib/uart.h"
 #include "utils/ustdlib.h"
 #include "lcd44780_LP.h"
+#include <math.h>
+#define M_PI 3.14159265359
 
 //#define LOOPBACKUART
 //Needed to increase stack size to 1024 for haversine formula :s
 
-#define FINALLAT 52.221385
-#define FINALLONG 0.148273
+#define FINALLAT	52.221385
+#define FINALLONG	0.148273
+#define EARTHRADIUS	6378.137	//Doesn't need to be insanely accurate for this application.
+#define NEARENOUGH	20			//Need to test this.
 
-#define RED		GPIO_PIN_1
-#define BLUE	GPIO_PIN_2
-#define GREEN	GPIO_PIN_3
+#define RED			GPIO_PIN_1
+#define BLUE		GPIO_PIN_2
+#define GREEN		GPIO_PIN_3
 #define BLINK(x)	GPIOPinWrite(GPIO_PORTF_BASE, (x),0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, (x),0)
+#define ATD			48 			// asci-> decimal numbers
 
-#define ATD		48 // asci-> decimal numbers
 #define V5POWER	GPIO_PIN_1	//E
 #define V3POWER	GPIO_PIN_2	//E
 #define SERVO	GPIO_PIN_4	//F
@@ -37,7 +41,7 @@
 
 #define SERVOPERIOD 200		//Sends a pulse to the servo every 20ms (given 0.1ms systick period).
 //#define FIRSTRUN			//Define for initial write to EEPROM
-//#define	EASYOPEN			//Opens when button held for long enough.
+//#define	EASYOPEN		//Opens when button held for long enough.
 
 #define GPSBAUD		38400
 
@@ -56,10 +60,6 @@ volatile int	neglat = 0;
 volatile int	neglong = 0;
 volatile int	haveFix = 0;
 
-#include <cmath>
-#include <math.h>
-#define M_PI 3.14159265359
-
 //*****************************************************************************
 //
 // The error routine that is called if the driver library encounters an error.
@@ -75,29 +75,11 @@ __error__(char *pcFilename, unsigned long ulLine)
 void
 UARTIntHandler(void) //This is triggered when the pc sends data - it is the virtual serial port interrupt.
 {
-    unsigned long ulStatus;
+    ROM_UARTIntClear(UART0_BASE, ROM_UARTIntStatus(UART0_BASE, true));
 
-    //
-    // Get the interrrupt status.
-    //
-    ulStatus = ROM_UARTIntStatus(UART0_BASE, true);
-
-    //
-    // Clear the asserted interrupts.
-    //
-    ROM_UARTIntClear(UART0_BASE, ulStatus);
-
-    //
-    // Loop while there are characters in the receive FIFO.
-    //
     while(ROM_UARTCharsAvail(UART0_BASE))
     {
-        //
-        // Read the next character from the UART and write it back to the UART.
-        //
-        ROM_UARTCharPutNonBlocking(UART3_BASE,
-                                   ROM_UARTCharGetNonBlocking(UART0_BASE));
-
+        ROM_UARTCharPutNonBlocking(UART3_BASE,ROM_UARTCharGetNonBlocking(UART0_BASE));
     }
 }
 
@@ -164,11 +146,9 @@ void UART3IntHandler(void)
 					break;
 				case 35:
 					haveFix= true;
-					//BLINK(RED);
-					//BLINK(BLUE);
 					break;
 				default:
-					nmea_state = 1;                    // we'll never and up here, but in case of a brownout make sure we start at the beginning
+					nmea_state = 1;  // we'll never and up here, but in case of a brownout make sure we start at the beginning
 					break;
 			}
 		}
@@ -194,60 +174,14 @@ UART3IntHandler(void) //This is triggered when the UART3 gets data - PC6/7
 }
 #endif
 
-//*****************************************************************************
-//
-// Send a string to the UART.
-//
-//*****************************************************************************
-void
-UARTSend(const unsigned char *pucBuffer, unsigned long ulCount)
-{
-    //
-    // Loop while there are more characters to send.
-    //
-    while(ulCount--)
-    {
-        //
-        // Write the next character to the UART.
-        //
-        ROM_UARTCharPutNonBlocking(UART0_BASE, *pucBuffer++);
-    }
-}
-
-void poweroff()
-{
-	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0xFF);
-}
-
-void openlock() //right now just wobbles the servo around at about 1Hz
-{
-	int i=10;
-	int temp=100;
-	long fudge=0.0005;
-	while(i>0)
-	{
-		GPIOPinWrite(GPIO_PORTF_BASE,SERVO,0xFF);
-		if (temp>50){SysCtlDelay((SysCtlClockGet()/3)*(0.0015));}
-		else{SysCtlDelay((SysCtlClockGet()/3)*(0.0019));}
-		GPIOPinWrite(GPIO_PORTF_BASE,SERVO,0);
-		SysCtlDelay((SysCtlClockGet()/3)*0.0075);
-		if (temp>0){temp--;}else{temp=100;i--;fudge=-fudge;}
-	}
-}
-
 void HibernateInterrupt()
 {
 	HibernateIntClear(HibernateIntStatus(1)); //Always need to clear the interrupts.
-	//openlock();
 }
-
-/*void delayms(int delay)
-{
-	SysCtlDelay(delay*(SysCtlClockGet()/3));
-}*/
 
 void openLock()
 {
+//	GPIOPinWrite(GPIO_PORTF_BASE,V5POWER,0xFF); IMPORTANT!!!!!!!!!!
 	LCDWriteText("Correct location", 0, 0);
 	LCDWriteText("Opening...      ", 1, 0);
 	servomson=10; //Unlock.
@@ -259,7 +193,6 @@ void openLock()
 int getDistance()
 {
 	int i,j;
-	int distance = 0;
 	float lat_proper;
 	float long_proper;
 	LCDWriteText("Locating...     ", 0, 0);
@@ -288,22 +221,21 @@ int getDistance()
 				lat_proper += ((float)(latitude[5+j]-ATD) /(600.0 * (float)(10^j)));
 				long_proper += ((float)(longitude[6+j]-ATD) /(600.0 * (float)(10^j)));
 			}
+			if (neglat){lat_proper = -lat_proper;}
+			if (neglong){long_proper = -long_proper;}
 
-		     double dlat1=lat_proper*(M_PI/180);
+			double dlat1=lat_proper*(M_PI/180);
 
-		     double dlong1=long_proper*(M_PI/180);
-		     double dlat2 = FINALLAT * (M_PI/180);
-		     double dlong2= FINALLONG * (M_PI/180);
+			double dlong1=long_proper*(M_PI/180);
+			double dlat2 = FINALLAT * (M_PI/180);
+			double dlong2= FINALLONG * (M_PI/180);
 
-		        double dLong=dlong1-dlong2;
-		        double dLat=dlat1-dlat2;
+			double dLong=dlong1-dlong2;
+			double dLat=dlat1-dlat2;
 
-		        double aHarv= pow(sin(dLat/2.0),2.0) + cos(dlat1)*cos(dlat2)*pow(sin(dLong/2),2);
-		        double cHarv=2*atan2(sqrt(aHarv),sqrt(1.0-aHarv));
-		        //earth's radius from wikipedia varies between 6,356.750 km — 6,378.135 km (˜3,949.901 — 3,963.189 miles)
-		        //The IUGG value for the equatorial radius of the Earth is 6378.137 km (3963.19 mile)
-		        const double earth=6378.137;
-		        double distance=earth*cHarv;
+			double aHarv= pow(sin(dLat/2.0),2.0) + cos(dlat1)*cos(dlat2)*pow(sin(dLong/2),2);
+			double cHarv=2*atan2(sqrt(aHarv),sqrt(1.0-aHarv));
+			double distance=EARTHRADIUS*cHarv;
 
 
 			return (int)(distance*1000); //whatever, need to get correct distance here.
@@ -325,12 +257,13 @@ void ServoDriver()
 	else {GPIOPinWrite(GPIO_PORTF_BASE,SERVO,0xFF);}
 }
 
-
-
 int
 main(void)
 {
-    // Enable lazy stacking for interrupt handlers.  This allows floating-point
+    char stringbuffer[21];
+    int distance = 0;
+
+	// Enable lazy stacking for interrupt handlers.  This allows floating-point
     // instructions to be used within interrupt handlers, but at the expense of
     // extra stack usage.
     ROM_FPUEnable();
@@ -338,10 +271,6 @@ main(void)
 
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_16MHZ);
-
-    char stringbuffer[21];
-    int distance = 0;
-    haveFix = 0;
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -359,8 +288,8 @@ main(void)
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
-    ROM_GPIOPinWrite(GPIO_PORTE_BASE, V3POWER, 0xFF); //Turn on the 5V power to LCD + servo.
-//#ifdef FUCKOFF
+    ROM_GPIOPinWrite(GPIO_PORTE_BASE, V3POWER, 0xFF);
+
 #ifdef EASYOPEN
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
 #endif
@@ -393,9 +322,9 @@ main(void)
 	SysTickEnable();
     ROM_IntMasterEnable();
 
-    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
+/*    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
     ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0xFF); //Turn on the 5V power to LCD + servo.
-    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
+    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.*/
 
     EEPROMInit();
 	initLCD();
@@ -426,7 +355,7 @@ main(void)
 		SysCtlDelay(SysCtlClockGet()); //Waits 3 seconds.
     }
 
-    else if (distance>20) //Valid fix, too far away.
+    else if (distance>NEARENOUGH) //Valid fix, too far away.
     {
     	if (numTries>0) //Any attemps remaining?
     	{
@@ -461,41 +390,7 @@ main(void)
 	HibernateIntRegister(&HibernateInterrupt);
 	HibernateIntEnable(HIBERNATE_INT_PIN_WAKE);
 	BLINK(BLUE);
-//#endif
 
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-    GPIOPinConfigure(GPIO_PC6_U3RX);
-    GPIOPinConfigure(GPIO_PC7_U3TX);
-    ROM_GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_6 | GPIO_PIN_7);
-
-
-    ROM_UARTConfigSetExpClk(UART0_BASE, ROM_SysCtlClockGet(), GPSBAUD,
-                            (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                             UART_CONFIG_PAR_NONE));
-
-    ROM_UARTConfigSetExpClk(UART3_BASE, ROM_SysCtlClockGet(), GPSBAUD,
-                            (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                             UART_CONFIG_PAR_NONE));
-
-    //
-    // Enable the UART interrupt.
-    //
-	ROM_GPIOPinWrite(GPIO_PORTE_BASE,V3POWER,0xFF); //Powers up GPS module TEMPLOCATION!!!!!!
-
-    ROM_IntEnable(INT_UART0);
-    ROM_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-    ROM_IntEnable(INT_UART3);
-    ROM_UARTIntEnable(UART3_BASE, UART_INT_RX | UART_INT_RT);
-    while(1){}
-    //
-    // Prompt for text to be entered.
-    //
-    //UARTSend((unsigned char *)"\033[2JEnter text: ", 16);
-    BLINK(GREEN);
-	//SysCtlDelay(ROM_SysCtlClockGet());
 	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0); //GPIO pins keep state on hibernate, so make sure to power everything else down.
 	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V3POWER, 0); //GPIO pins keep state on hibernate, so make sure to power everything else down.
     ROM_GPIOPinWrite(GPIO_PORTB_BASE, RS|E|D4|D5|D6|D7, 0xFF); //Pull all data pins to LCD high so we're not phantom powering it through ESD diodes.

@@ -19,15 +19,12 @@ uart_echo.obj: C:/StellarisWare/driverlib/uart.h
 uart_echo.obj: C:/StellarisWare/utils/ustdlib.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h
 uart_echo.obj: ../lcd44780_LP.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/cmath
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h
+uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/yvals.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/linkage.h
 uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/_lock.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/mathcpp.h
-uart_echo.obj: C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h
 
 ../uart_echo.c: 
 C:/StellarisWare/inc/hw_ints.h: 
@@ -48,12 +45,9 @@ C:/StellarisWare/driverlib/uart.h:
 C:/StellarisWare/utils/ustdlib.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h: 
 ../lcd44780_LP.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/cmath: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h: 
+C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/yvals.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/stdarg.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/linkage.h: 
 C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/_lock.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/ymath.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/mathcpp.h: 
-C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include/math.h: 

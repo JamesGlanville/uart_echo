@@ -55,6 +55,7 @@ extern unsigned long __STACK_TOP;
 extern void UARTIntHandler(void);
 extern void UART3IntHandler(void);
 extern void HibernateInterrupt(void);
+extern void GPIO_PortA_IntHandler(void);
 
 //*****************************************************************************
 //
@@ -83,7 +84,7 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     IntDefaultHandler,                      // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
+    GPIO_PortA_IntHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D

@@ -10,18 +10,8 @@ ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./ustdlib.obj" \
 "./uart_echo.obj" \
-"./tok.obj" \
-"./time.obj" \
 "./startup_ccs.obj" \
-"./sentence.obj" \
-"./parser.obj" \
-"./parse.obj" \
 "./lcd44780_LP.obj" \
-"./info.obj" \
-"./gmath.obj" \
-"./generator.obj" \
-"./generate.obj" \
-"./context.obj" \
 -l"libc.a" \
 -l"C:/StellarisWare/boards/ek-lm4f120xl/uart_echo/ccs/../../../../driverlib/ccs-cm4f/Debug/driverlib-cm4f.lib" \
 "../uart_echo_ccs.cmd" \
@@ -137,8 +127,8 @@ uart_echo.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "uart_echo.out"
-	-$(RM) "context.pp" "generate.pp" "generator.pp" "gmath.pp" "info.pp" "lcd44780_LP.pp" "parse.pp" "parser.pp" "sentence.pp" "startup_ccs.pp" "time.pp" "tok.pp" "uart_echo.pp" "ustdlib.pp" 
-	-$(RM) "context.obj" "generate.obj" "generator.obj" "gmath.obj" "info.obj" "lcd44780_LP.obj" "parse.obj" "parser.obj" "sentence.obj" "startup_ccs.obj" "time.obj" "tok.obj" "uart_echo.obj" "ustdlib.obj" 
+	-$(RM) "lcd44780_LP.pp" "startup_ccs.pp" "uart_echo.pp" "ustdlib.pp" 
+	-$(RM) "lcd44780_LP.obj" "startup_ccs.obj" "uart_echo.obj" "ustdlib.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

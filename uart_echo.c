@@ -21,13 +21,14 @@
 //#define LOOPBACKUART
 //Needed to increase stack size to 1024 for haversine formula :s
 
-#define FINALLAT	52.221385
-#define FINALLONG	0.148273
+#define FINALLAT	52.198937
+#define FINALLONG	0.115457
 #define EARTHRADIUS	6378.137	//Doesn't need to be insanely accurate for this application.
 #define NEARENOUGH	20			//Need to test this.
+#define TIMEOUT		90
 
 #define RED			GPIO_PIN_1
-#define BLUE		GPIO_PIN_2
+//#define BLUE		GPIO_PIN_2
 #define GREEN		GPIO_PIN_3
 #define BLINK(x)	GPIOPinWrite(GPIO_PORTF_BASE, (x),0xFF);SysCtlDelay(SysCtlClockGet()/6);GPIOPinWrite(GPIO_PORTF_BASE, (x),0)
 #define ATD			48 			// asci-> decimal numbers
@@ -35,6 +36,7 @@
 #define V5POWER	GPIO_PIN_1	//E
 #define V3POWER	GPIO_PIN_2	//E
 #define SERVO	GPIO_PIN_4	//F
+#define REEDPIN	GPIO_PIN_7	//F
 #define WAKEPIN GPIO_PIN_0  //F Must be left high-Z at all times.
 							//Port B used in its entirety for the lcd driver
 							//UART3 is used for the GPS module - PC6=U3RX, PC7=U3TX
@@ -45,15 +47,15 @@
 
 #define GPSBAUD		38400
 
-unsigned long initialNumTries = 50;
+unsigned long initialNumTries = 105;
 unsigned long eepromAddress = 0xBEEF; //random non-zero address in case page 0 is special ( i think it is)
 unsigned long numTrieslong = 0;
-int numTries = 0;
+//int numTries = 0;
 
 volatile int servomson = 15;
 volatile int servotimer  = SERVOPERIOD;
 
-volatile int	nmea_state = 0;
+volatile int	nmea_state = 1;
 volatile char	latitude[16] = {0};
 volatile char	longitude[16] = {0};
 volatile int	neglat = 0;
@@ -146,6 +148,7 @@ void UART3IntHandler(void)
 					break;
 				case 35:
 					haveFix= true;
+					nmea_state=1;
 					break;
 				default:
 					nmea_state = 1;  // we'll never and up here, but in case of a brownout make sure we start at the beginning
@@ -179,37 +182,46 @@ void HibernateInterrupt()
 	HibernateIntClear(HibernateIntStatus(1)); //Always need to clear the interrupts.
 }
 
+void GPIO_PortA_IntHandler(void)
+{
+	GPIOPinIntClear(GPIO_PORTA_BASE,REEDPIN);
+	GPIOPinWrite(GPIO_PORTE_BASE,V5POWER,0xFF); //IMPORTANT!!!!!!!!!!
+	servomson=10;
+}
 void openLock()
 {
-//	GPIOPinWrite(GPIO_PORTF_BASE,V5POWER,0xFF); IMPORTANT!!!!!!!!!!
+	GPIOPinWrite(GPIO_PORTE_BASE,V5POWER,0xFF); //IMPORTANT!!!!!!!!!!
 	LCDWriteText("Correct location", 0, 0);
 	LCDWriteText("Opening...      ", 1, 0);
 	servomson=10; //Unlock.
 	SysCtlDelay(SysCtlClockGet()*3); //Wait for 9s
     servomson=15; //Lock.
 	SysCtlDelay(SysCtlClockGet()/3); //Wait for 1s
+	GPIOPinWrite(GPIO_PORTE_BASE,V5POWER,0x00);// IMPORTANT!!!!!!!!!!
 }
 
 int getDistance()
 {
 	int i,j;
-	float lat_proper;
+	float lat_proper; //These store the properly formatted lat/longs in decimal.
 	float long_proper;
 	LCDWriteText("Locating...     ", 0, 0);
 	LCDWriteText("                ", 1, 0);
 
-#ifdef EASYOPEN //Not Complete.
-	int open=1;
-	for(int i=0;i<1000;i++)
+#ifdef EASYOPEN //Untested, should work.
+	int open=true;
+	for(int i=0;i<3000;i++)
 	{
-		if (GPIOPinRead(GPIO_PORTF_BASE,GPIO_PIN_0)!=0)
+		if (GPIOPinRead(GPIO_PORTF_BASE,GPIO_PIN_0)!=0) {open = false;}
 	}
+	if (open == true) {return 0;}
 #endif
 
-	for (i = 0;i<6000;i++) //for 60 seconds of trying
+	for (i = 0;i<TIMEOUT;i++) //for TIMEOUT seconds of trying
 	{
 		if (haveFix == 1)
 		{
+			//This should all work - the values given are reasonable, but needs to be tested outside.
 			lat_proper = 10*(latitude[0]-ATD)+latitude[1]-ATD;
 			lat_proper += ((float)(10*(latitude[2]-ATD) + latitude[3]-ATD))/60.0;
 
@@ -235,10 +247,9 @@ int getDistance()
 
 			double aHarv= pow(sin(dLat/2.0),2.0) + cos(dlat1)*cos(dlat2)*pow(sin(dLong/2),2);
 			double cHarv=2*atan2(sqrt(aHarv),sqrt(1.0-aHarv));
-			double distance=EARTHRADIUS*cHarv;
-
-
-			return (int)(distance*1000); //whatever, need to get correct distance here.
+			//double distance=EARTHRADIUS*cHarv;
+			haveFix = 0;
+			return (int)(EARTHRADIUS*cHarv*1000); //whatever, need to get correct distance here.
 		}
 		SysCtlDelay(SysCtlClockGet()/3);
 	}
@@ -260,7 +271,7 @@ void ServoDriver()
 int
 main(void)
 {
-    char stringbuffer[21];
+    char stringbuffer[17];
     int distance = 0;
 
 	// Enable lazy stacking for interrupt handlers.  This allows floating-point
@@ -282,11 +293,12 @@ main(void)
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_HIBERNATE);
 
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTF_BASE, WAKEPIN);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, REEDPIN);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, V5POWER);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, V3POWER);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, SERVO);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+  //  ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
     ROM_GPIOPinWrite(GPIO_PORTE_BASE, V3POWER, 0xFF);
 
@@ -322,6 +334,12 @@ main(void)
 	SysTickEnable();
     ROM_IntMasterEnable();
 
+    GPIOIntTypeSet(GPIO_PORTA_BASE, REEDPIN, GPIO_FALLING_EDGE);
+    GPIOPinIntClear(GPIO_PORTA_BASE, REEDPIN);
+    GPIOPinIntEnable(GPIO_PORTA_BASE, REEDPIN);
+    IntEnable(INT_GPIOA);
+   // while(1){}
+
 /*    SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.
     ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0xFF); //Turn on the 5V power to LCD + servo.
     SysCtlDelay(SysCtlClockGet()/1000);//Make sure the servo is going to get a pulse soon.*/
@@ -329,6 +347,10 @@ main(void)
     EEPROMInit();
 	initLCD();
 	LCDCommand(0x0c);
+
+#ifdef LOOPBACKUART
+	while(1){}
+#endif
 
 #ifdef FIRSTRUN //First run, sets the eeprom to have as many tries as is desired.
     EEPROMMassErase();
@@ -339,16 +361,18 @@ main(void)
 #endif
 
     EEPROMRead(&numTrieslong,eepromAddress,sizeof(numTrieslong));
-    numTries=(int)numTrieslong;
-
-    if (0)//(numTries > initialNumTries) //Has already opened once, so just open as needed if stuck.
+//    numTries=(int)numTrieslong;
+//    openLock();
+ //   numTrieslong=0;
+    if (numTrieslong > initialNumTries-3) //Has already opened once, so just open as needed if stuck.
     {
     	openLock();
+    	numTrieslong--;
+		EEPROMProgram(&numTrieslong,eepromAddress,sizeof(numTrieslong)); //Decrement EEPROM counter.
     }
     else
     {
     distance = getDistance();
-
     if(distance==99999){ //No fix :/
 		LCDWriteText("Location unknown", 0, 0);
 		LCDWriteText("Take me outside ", 1, 0);
@@ -357,45 +381,50 @@ main(void)
 
     else if (distance>NEARENOUGH) //Valid fix, too far away.
     {
-    	if (numTries>0) //Any attemps remaining?
+    	if ((int)numTrieslong>0) //Any attempts remaining?
     	{
-			usnprintf(stringbuffer,21,"Distance: %4dm ",distance);
+			usnprintf(stringbuffer,17,"Distance: %4dm  ",distance);
 			LCDWriteText(stringbuffer, 0, 0);
 			numTrieslong--;
-			numTries=(int)numTrieslong;
+//			numTries=(int)numTrieslong;
 			EEPROMProgram(&numTrieslong,eepromAddress,sizeof(numTrieslong)); //Decrement EEPROM counter.
-			usnprintf(stringbuffer,21,"%2d Attempts left",numTries);
+			usnprintf(stringbuffer,17,"%2d Attempts left",(int)numTrieslong);
 			LCDWriteText(stringbuffer, 1, 0);
+			SysCtlDelay(SysCtlClockGet()*2);
     	}
     	else
     	{
     		LCDWriteText("Oh dear...      ", 0, 0); //Not really sure what to do, hopefully this code never runs.
     		LCDWriteText("Opening anyway. ", 1, 0);
+        //	numTrieslong=initialNumTries+1;
+		//	EEPROMProgram(&numTrieslong,eepromAddress,sizeof(initialNumTries)); //Set to big value
+			SysCtlDelay(10*SysCtlClockGet()/3);
+			openLock();
     	}
     	}
     else //Found the location!
     {
     	openLock();
     	numTrieslong=initialNumTries+1;
-        numTries=(int)numTrieslong;
+        //numTries=(int)numTrieslong;
     	EEPROMProgram(&numTrieslong,eepromAddress,sizeof(initialNumTries)); //Lock will now open straight away.
     }
     }
 
-    BLINK(RED);
+ //   BLINK(RED);
 	HibernateEnableExpClk(SysCtlClockGet());
 	HibernateGPIORetentionEnable();											//Enables GPIO retention after wake from hibernate.
 	HibernateClockSelect(HIBERNATE_CLOCK_SEL_RAW);
 	HibernateWakeSet(HIBERNATE_WAKE_PIN);
 	HibernateIntRegister(&HibernateInterrupt);
 	HibernateIntEnable(HIBERNATE_INT_PIN_WAKE);
-	BLINK(BLUE);
+	//BLINK(BLUE);
 
 	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V5POWER, 0); //GPIO pins keep state on hibernate, so make sure to power everything else down.
 	ROM_GPIOPinWrite(GPIO_PORTE_BASE, V3POWER, 0); //GPIO pins keep state on hibernate, so make sure to power everything else down.
     ROM_GPIOPinWrite(GPIO_PORTB_BASE, RS|E|D4|D5|D6|D7, 0xFF); //Pull all data pins to LCD high so we're not phantom powering it through ESD diodes.
     ROM_GPIOPinWrite(GPIO_PORTF_BASE, SERVO, 0xFF); //Likewise for the servo
-
+    SysCtlDelay(SysCtlClockGet()/6);
     HibernateRequest();// we want to be looping'n'shit.
     while(1){}	//Lalala, I'm a sleeping right now.
 }

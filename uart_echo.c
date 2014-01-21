@@ -25,7 +25,7 @@
 #define FINALLONG	0.115457
 #define EARTHRADIUS	6378.137	//Doesn't need to be insanely accurate for this application.
 #define NEARENOUGH	20			//Need to test this.
-#define TIMEOUT		90
+#define TIMEOUT		90			//Amount of time to wait for GPS lock
 
 #define RED			GPIO_PIN_1
 //#define BLUE		GPIO_PIN_2
@@ -45,14 +45,14 @@
 //#define FIRSTRUN			//Define for initial write to EEPROM
 //#define	EASYOPEN		//Opens when button held for long enough.
 
-#define GPSBAUD		38400
+#define GPSBAUD		38400	//Baud rate of GPS module
 
-unsigned long initialNumTries = 105;
+unsigned long initialNumTries = 105; //Gives a few test tries before box is ready.
 unsigned long eepromAddress = 0xBEEF; //random non-zero address in case page 0 is special ( i think it is)
-unsigned long numTrieslong = 0;
+unsigned long numTrieslong = 0; //Stores the EEPROM read
 //int numTries = 0;
 
-volatile int servomson = 15;
+volatile int servomson = 15; //Closed position
 volatile int servotimer  = SERVOPERIOD;
 
 volatile int	nmea_state = 1;
